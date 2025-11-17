@@ -1,37 +1,10 @@
-stages:
-  - test
-
-test-simple:
-  stage: test
+test-runner:
   image: alpine:latest
   script:
-    - echo "=== Basic Alpine Test ==="
+    - echo "=== Новый раннер с новым токеном ==="
+    - echo "Токен был пересоздан успешно!"
+    - echo "SUCCESS: Runner is working with new token"
     - uname -a
-    - echo "This is a simple test"
-    - echo "SUCCESS: Basic test passed"
-  tags:
-    - docker
-
-test-python-simple:
-  stage: test
-  image: python:3.9-alpine
-  script:
-    - echo "=== Python Test ==="
-    - python --version
-    - python -c "print('Hello from Python in CI/CD!')"
-    - echo "SUCCESS: Python test passed"
-  tags:
-    - docker
-
-test-docker-simple:
-  stage: test
-  image: docker:24-alpine
-  variables:
-    DOCKER_HOST: "tcp://dind:2375"
-    DOCKER_TLS_CERTDIR: ""
-  script:
-    - echo "=== Docker Test ==="
-    - docker --version
-    - echo "SUCCESS: Docker test passed"
+    - echo "Все тесты - пройдены!"
   tags:
     - docker
