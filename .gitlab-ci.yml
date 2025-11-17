@@ -1,19 +1,37 @@
 stages:
   - test
 
-always-success:
+test-simple:
   stage: test
   image: alpine:latest
   script:
-    - echo "This job should always pass"
-    - echo "Testing basic GitLab CI/CD functionality"
+    - echo "=== Basic Alpine Test ==="
+    - uname -a
+    - echo "This is a simple test"
+    - echo "SUCCESS: Basic test passed"
   tags:
     - docker
 
-python-hello:
+test-python-simple:
   stage: test
   image: python:3.9-alpine
   script:
+    - echo "=== Python Test ==="
+    - python --version
     - python -c "print('Hello from Python in CI/CD!')"
+    - echo "SUCCESS: Python test passed"
+  tags:
+    - docker
+
+test-docker-simple:
+  stage: test
+  image: docker:24-alpine
+  variables:
+    DOCKER_HOST: "tcp://dind:2375"
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - echo "=== Docker Test ==="
+    - docker --version
+    - echo "SUCCESS: Docker test passed"
   tags:
     - docker
