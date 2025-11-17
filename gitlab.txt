@@ -1,0 +1,318 @@
+
+7JiMbHLmzvroxjq7S-xb
+
+GR1348941abc123def456
+
+root
+SecurePassword123!
+
+
+  207  git add .
+  208  git commit -m "test: Simple test pipeline"
+  209  git push origin main
+
+
+
+
+LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFNd0FBQUF0emMyZ3RaVwpReU5UVXhPUUFBQUNCNHJjcmZvODdQSFVjMlFTM3NxVjJTUHBsemxWMy9mSFo0cXU0R3NQdE00Z0FBQUpCTVJJQWdURVNBCklBQUFBQXR6YzJndFpXUXlOVFV4T1FBQUFDQjRyY3Jmbzg3UEhVYzJRUzNzcVYyU1BwbHpsVjMvZkhaNHF1NEdzUHRNNGcKQUFBRUIvNFFkK09FOWZDSGJURXExaVVrUEtiYlFMNTVoU2ZjNWZSam5yVGJ0VXZYaXR5dCtqenM4ZFJ6WkJMZXlwWFpJKwptWE9WWGY5OGRuaXE3Z2F3KzB6aUFBQUFCbWRwZEd4aFlnRUNBd1FGQmdjPQotLS0tLUVORCBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0=
+
+
+
+docker compose exec gitlab-runner gitlab-runner register \
+    --non-interactive \
+    --url "http://gitlab:80" \
+    --registration-token "GR1348941$(SecureRandom.hex(8))" \
+    --executor "docker" \
+    --docker-image "alpine:latest" \
+    --docker-volumes "/cache" \
+    --docker-network-mode "gitlab_net" \
+    --docker-privileged="true" \
+    --docker-host="tcp://dind:2375" \
+    --docker-tlsverify="false" \
+    --description "Docker Runner" \
+    --tag-list "docker,linux" \
+    --run-untagged="true" \
+    --locked="false"
+
+cd ~/gitlab-test
+
+# Простой способ - установим конкретный токен
+docker compose exec gitlab gitlab-rails runner "
+settings = Gitlab::CurrentSettings.current_application_settings
+settings.set_runners_registration_token('GR1348941abc123def456')
+settings.save!
+puts 'Токен установлен: GR1348941abc123def456'
+"
+
+# Останавливаем раннер
+docker compose stop gitlab-runner
+
+# Удаляем старую конфигурацию
+sudo rm -f config/gitlab-runner/config.toml
+
+# Запускаем раннер
+docker compose up -d gitlab-runner
+sleep 5
+
+# Регистрируем с новым токеном
+docker compose exec gitlab-runner gitlab-runner register \
+    --non-interactive \
+    --url "http://gitlab:80" \
+    --registration-token "$CURRENT_TOKEN" \
+    --executor "docker" \
+    --docker-image "alpine:latest" \
+    --docker-volumes "/cache" \
+    --docker-network-mode "gitlab_net" \
+    --docker-privileged="true" \
+    --docker-host="tcp://dind:2375" \
+    --docker-tlsverify="false" \
+    --description "Docker Runner" \
+    --tag-list "docker,linux" \
+    --run-untagged="true" \
+    --locked="false"
+
+
+
+
+cat ~/.ssh/github_mirror | base64 -w0
+
+cd ~/test-ci-cd
+
+cat > .gitlab-ci.yml << 'EOF'
+stages:
+  - test
+  - mirror
+
+variables:
+  GITHUB_REPO: git@github.com:strizhenko/gitlab-dock-compose.git
+
+# Ваши обычные jobs
+test-simple:
+  stage: test
+  image: alpine:latest
+  script:
+    - echo "Testing before mirroring to GitHub"
+  tags:
+    - docker
+
+# Mirror to GitHub
+mirror-to-github:
+  stage: mirror
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$GITHUB_SSH_PRIVATE_KEY" > ~/.ssh/github_mirror
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  script:
+    - git remote add github $GITHUB_REPO || true
+    - git push --mirror github
+  only:
+    - main
+  tags:
+    - docker
+EOF
+
+
+
+
+
+cat > .gitlab-dock-compose.yml << 'EOF'
+stages:
+  - test
+  - deploy
+
+.test_template: &test_template
+  tags:
+    - docker
+  only:
+    - main
+    - merge_requests
+
+test-python:
+  <<: *test_template
+  stage: test
+  image: python:3.9-alpine
+  script:
+    - python --version
+    - echo "Tests passed"
+
+test-docker:
+  <<: *test_template
+  stage: test
+  image: docker:24-alpine
+  script:
+    - docker --version
+
+# GitHub Mirroring только для main ветки после успешных тестов
+mirror-to-github:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$GITHUB_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  script:
+    - git remote add github $GITHUB_REPO || true
+    - git push github main:main
+  only:
+    - main
+  when: on_success
+  tags:
+    - docker
+EOF
+
+
+
+
+
+
+
+
+  1. Добавление пользователя в группу docker (рекомендуется)
+bash
+# Добавляем текущего пользователя в группу docker
+sudo usermod -aG docker $USER
+
+# Перезагружаем систему или выходим/входим в учетную запись
+newgrp docker
+
+# Проверяем, что пользователь в группе docker
+groups $USER
+После этого перезапустите терминал или выполните:
+
+bash
+su - $USER
+
+   81  docker system prune -a -f --volumes
+   82  docker ps -a
+   83  docker rm -f $(docker ps -aq) 2>/dev/null; docker rmi -f $(docker images -q) 2>/dev/null
+
+
+
+
+sudo cat ./config/initial_root_password
+
+
+
+
+Вот пошаговое руководство по поднятию тестовой среды GitLab на Linux Mint с помощью Docker Compose:
+
+1. Установка Docker и Docker Compose
+bash
+# Обновление системы
+sudo apt update && sudo apt upgrade -y
+
+# Установка Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Добавление пользователя в группу docker
+sudo usermod -aG docker $USER
+
+# Установка Docker Compose
+sudo apt install docker-compose docker-compose-plugin -y
+
+# Перезагрузка для применения изменений групп
+newgrp docker
+2. Создание docker-compose.yml
+Создайте директорию для GitLab и файл конфигурации:
+
+bash
+mkdir gitlab-test && cd gitlab-test
+nano docker-compose.yml
+yaml
+version: '3.8'
+
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: always
+    hostname: 'localhost'
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8080'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+    ports:
+      - "8080:80"
+      - "8443:443"
+      - "2222:22"
+    volumes:
+      - ./config:/etc/gitlab
+      - ./logs:/var/log/gitlab
+      - ./data:/var/opt/gitlab
+    networks:
+      - gitlab-network
+
+networks:
+  gitlab-network:
+    driver: bridge
+3. Запуск GitLab
+bash
+# Запуск контейнера
+docker compose up -d
+
+# Просмотр логов для отслеживания запуска
+docker compose logs -f gitlab
+4. Настройка и первоначальный доступ
+После запуска подождите 2-5 минут пока GitLab полностью инициализируется.
+
+bash
+# Проверка статуса контейнера
+docker compose ps
+
+# Просмотр сгенерированного пароля root
+sudo cat ./config/initial_root_password
+5. Доступ к GitLab
+Веб-интерфейс: http://localhost:8080
+
+Логин: root
+
+Пароль: из файла initial_root_password
+
+6. Полезные команды для управления
+bash
+# Остановка GitLab
+docker compose down
+
+# Перезапуск
+docker compose restart
+
+# Полная остановка с удалением volumes (данные будут удалены)
+docker compose down -v
+
+# Обновление образа
+docker compose pull
+docker compose up -d
+7. Дополнительные настройки (опционально)
+Для увеличения производительности можно добавить в docker-compose.yml:
+
+yaml
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+8. Резервное копирование
+bash
+# Создание бэкапа
+docker exec -t gitlab gitlab-backup create
+
+# Ручное копирование конфигурации
+sudo cp -r ./config ./config_backup
+sudo cp -r ./data ./data_backup
+Важные замечания:
+Требования к ресурсам: Минимум 4GB RAM, рекомендуется 8GB
+
+Первоначальная настройка: Может занять 10-15 минут
+
+Дисковое пространство: Выделите минимум 10GB
+
+Порты: Убедитесь, что порты 8080, 8443 и 2222 свободны
+
+Эта конфигурация идеально подходит для тестовой среды и разработки. Для продакшн-использования потребуется дополнительная настройка безопасности.
