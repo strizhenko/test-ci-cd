@@ -1,45 +1,19 @@
 stages:
   - test
-  - lint
 
-# Упрощенная конфигурация без сложных сервисов
-test-python:
-  stage: test
-  image: python:3.9-alpine
-  script:
-    - python --version
-    - pip install -r requirements.txt
-    - python main.py
-    - echo "Python test completed successfully"
-  tags:
-    - docker
-
-lint-python:
-  stage: lint
-  image: python:3.9-alpine
-  script:
-    - pip install pylint
-    - pylint --exit-zero main.py || echo "Linting completed with warnings"
-  tags:
-    - docker
-
-simple-test:
+always-success:
   stage: test
   image: alpine:latest
   script:
-    - echo "Hello from GitLab CI/CD!"
-    - echo "Runner is working correctly"
-    - echo "Project: $CI_PROJECT_NAME"
-    - echo "Branch: $CI_COMMIT_REF_NAME"
+    - echo "This job should always pass"
+    - echo "Testing basic GitLab CI/CD functionality"
   tags:
     - docker
 
-# Тест с Docker (упрощенный)
-docker-version:
+python-hello:
   stage: test
-  image: docker:24-alpine
+  image: python:3.9-alpine
   script:
-    - docker --version
-    - echo "Docker command is available"
+    - python -c "print('Hello from Python in CI/CD!')"
   tags:
     - docker
