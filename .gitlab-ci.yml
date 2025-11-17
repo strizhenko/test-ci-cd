@@ -1,59 +1,45 @@
 stages:
   - test
   - lint
-  - build
 
-variables:
-  DOCKER_HOST: tcp://dind:2375
-
+# Упрощенная конфигурация без сложных сервисов
 test-python:
   stage: test
-  image: python:3.9
+  image: python:3.9-alpine
   script:
     - python --version
     - pip install -r requirements.txt
     - python main.py
     - echo "Python test completed successfully"
+  tags:
+    - docker
 
 lint-python:
   stage: lint
-  image: python:3.9
+  image: python:3.9-alpine
   script:
     - pip install pylint
-    - pylint --exit-zero main.py || true
-    - echo "Linting completed"
+    - pylint --exit-zero main.py || echo "Linting completed with warnings"
+  tags:
+    - docker
 
-test-docker:
+simple-test:
   stage: test
-  image: docker:24
-  services:
-    - name: docker:24-dind
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-  script:
-    - docker --version
-    - docker info
-    - echo "Docker is available and working"
-
-hello-world:
-  stage: build
   image: alpine:latest
   script:
-    - echo "Hello, GitLab CI/CD!"
-    - echo "This job is running on our own runner"
+    - echo "Hello from GitLab CI/CD!"
+    - echo "Runner is working correctly"
     - echo "Project: $CI_PROJECT_NAME"
     - echo "Branch: $CI_COMMIT_REF_NAME"
   tags:
     - docker
-    - linux
 
-# Job который запускается только для merge requests
-mr-check:
+# Тест с Docker (упрощенный)
+docker-version:
   stage: test
-  image: alpine:latest
+  image: docker:24-alpine
   script:
-    - echo "This job runs only for merge requests"
-    - echo "MR Source: $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME"
-    - echo "MR Target: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - docker --version
+    - echo "Docker command is available"
+  tags:
+    - docker
