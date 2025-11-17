@@ -1,10 +1,33 @@
-test-runner:
+stages:
+  - test
+  - mirror
+
+variables:
+  GITHUB_REPO: git@github.com:strizhenko/gitlab-dock-compose.git
+
+# Ваши обычные jobs
+test-simple:
+  stage: test
   image: alpine:latest
   script:
-    - echo "=== Новый раннер с новым токеном ==="
-    - echo "Токен был пересоздан успешно!"
-    - echo "SUCCESS: Runner is working with new token"
-    - uname -a
-    - echo "Все тесты - пройдены!"
+    - echo "Testing before mirroring to GitHub"
+  tags:
+    - docker
+
+# Mirror to GitHub
+mirror-to-github:
+  stage: mirror
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$GITHUB_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  script:
+    - git remote add github $GITHUB_REPO || true
+    - git push --mirror github
+  only:
+    - main
   tags:
     - docker

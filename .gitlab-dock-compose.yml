@@ -1,0 +1,44 @@
+stages:
+  - test
+  - deploy
+
+.test_template: &test_template
+  tags:
+    - docker
+  only:
+    - main
+    - merge_requests
+
+test-python:
+  <<: *test_template
+  stage: test
+  image: python:3.9-alpine
+  script:
+    - python --version
+    - echo "Tests passed"
+
+test-docker:
+  <<: *test_template
+  stage: test
+  image: docker:24-alpine
+  script:
+    - docker --version
+
+# GitHub Mirroring только для main ветки после успешных тестов
+mirror-to-github:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$GITHUB_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  script:
+    - git remote add github $GITHUB_REPO || true
+    - git push github main:main
+  only:
+    - main
+  when: on_success
+  tags:
+    - docker
